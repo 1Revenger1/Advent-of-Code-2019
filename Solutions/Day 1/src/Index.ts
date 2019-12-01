@@ -18,12 +18,11 @@ input.forEach((line : string) => {
 
 console.log("Part 1 Answer: %d", sum);
 
-function recursiveTotal(num : number, add : string) : number {
+function recursiveTotal(num : number) : number {
     let fuel : number = Math.floor(num / 3.0) - 2;
     if(fuel <= 0) return 0;
     else {
-        add += ", " + fuel;
-        return fuel + recursiveTotal(fuel, add);
+        return fuel + recursiveTotal(fuel);
     }
 }
 
@@ -31,7 +30,7 @@ sum = 0;
 
 input.forEach((line : string) => {
     let num : number = parseInt(line);
-    sum += recursiveTotal(num, "");
+    sum += recursiveTotal(num);
 });
 
 console.log("Part 2 Answer: %d", sum);
