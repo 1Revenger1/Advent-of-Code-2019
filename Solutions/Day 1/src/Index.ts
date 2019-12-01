@@ -20,10 +20,7 @@ console.log("Part 1 Answer: %d", sum);
 
 function recursiveTotal(num : number, add : string) : number {
     let fuel : number = Math.floor(num / 3.0) - 2;
-    if(fuel <= 0) {
-        console.log(add);
-        return 0;
-    }
+    if(fuel <= 0) return 0;
     else {
         add += ", " + fuel;
         return fuel + recursiveTotal(fuel, add);
