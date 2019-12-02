@@ -12,21 +12,18 @@ input.forEach((line) => {
     sum += Math.floor(num / 3.0) - 2;
 });
 console.log("Part 1 Answer: %d", sum);
-function recursiveTotal(num, add) {
+function recursiveTotal(num) {
     let fuel = Math.floor(num / 3.0) - 2;
-    if (fuel <= 0) {
-        console.log(add);
+    if (fuel <= 0)
         return 0;
-    }
     else {
-        add += ", " + fuel;
-        return fuel + recursiveTotal(fuel, add);
+        return fuel + recursiveTotal(fuel);
     }
 }
 sum = 0;
 input.forEach((line) => {
     let num = parseInt(line);
-    sum += recursiveTotal(num, "");
+    sum += recursiveTotal(num);
 });
 console.log("Part 2 Answer: %d", sum);
 //# sourceMappingURL=Index.js.map
