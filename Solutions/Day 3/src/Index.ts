@@ -1,9 +1,6 @@
 import * as fs from 'fs';
 import * as chalk from 'chalk';
-import { IntCodeinnator, Storage } from './IntCodeinnator';
-import { kMaxLength } from 'buffer';
-
-const day : number = 0;
+const day : number = 3;
 
 console.log("+------------------------------+");
 console.log("|  " + chalk.blueBright("Advent of Code 2019:") + chalk.green(" Day", day) + "  |");
