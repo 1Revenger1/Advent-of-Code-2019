@@ -101,7 +101,7 @@ export class IntCodeinnator {
             let opNum = parseInt(opStr.substring(opStr.length > 2 ? opStr.length - 2 : 0));
             let op : OP = this.ops.get(opNum);
 
-            // Calculate if pointer
+            // Calculate if pointer or needs to be immediate
             let immedOne = op.pointerMask & PARAM_A_POINTER ? true : this.calcImmedate(opStr, 2);
             let immedTwo = op.pointerMask & PARAM_B_POINTER ? true : this.calcImmedate(opStr, 3);
             let immedThree = op.pointerMask & PARAM_C_POINTER ? true : this.calcImmedate(opStr, 4);
@@ -118,7 +118,6 @@ export class IntCodeinnator {
             }
 
             await op.run(this.inst, this.memory);
-
             if(this.increment) this.pointer += op.length;
         }
 

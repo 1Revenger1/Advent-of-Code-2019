@@ -2,9 +2,8 @@ import * as fs from 'fs';
 import * as chalk from 'chalk';
 import { IntCodeinnator, Storage } from './IntCodeinnator';
 
-(async () => {
-
-const day : number = 0;
+(async ()=> {
+const day : number = 5;
 
 console.log("+------------------------------+");
 console.log("|  " + chalk.blueBright("Advent of Code 2019:") + chalk.green(" Day", day) + "  |");
@@ -21,8 +20,7 @@ let innator = new IntCodeinnator(storage);
 // Timing start
 let startTime : number = new Date().getTime();
 
-let output = await innator.run(12, 2);
-console.log(output[0]);
+let output = await innator.run();
 
 // Timing end
 let part1End : number = new Date().getTime();
@@ -36,8 +34,7 @@ innator.reset();
 // Timing of Part 2 start
 let startPart2Time : number = new Date().getTime();
 
-output = await innator.run(12, 2);
-console.log(output[0]);
+output = await innator.run();
 
 // Timing end
 let part2End : number = new Date().getTime();
