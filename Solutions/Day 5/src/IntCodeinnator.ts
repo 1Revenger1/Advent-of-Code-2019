@@ -1,4 +1,5 @@
 import * as readline from 'readline';
+import * as chalk from 'chalk';
 
 let rl = readline.createInterface({
   input: process.stdin,
@@ -60,8 +61,8 @@ export class IntCodeinnator {
     constructor(image : Storage) {
         this.ops.set(1,  { length: 4, pointerMask: PARAM_C_POINTER, run: async (inst, memory) => { memory[inst.dest] = inst.noun + inst.verb }}); // Add
         this.ops.set(2,  { length: 4, pointerMask: PARAM_C_POINTER, run: async (inst, memory) => { memory[inst.dest] = inst.noun * inst.verb }}); // Mult
-        this.ops.set(3,  { length: 2, pointerMask: PARAM_A_POINTER, run: async (inst, memory) => { memory[inst.noun] = await new Promise((res, rej) => rl.question("?", answer => res(parseInt(answer))))}}); // Query -> Insert
-        this.ops.set(4,  { length: 2, pointerMask: 0,               run: async (inst, memory) => { console.log(inst.noun) }}); // Print
+        this.ops.set(3,  { length: 2, pointerMask: PARAM_A_POINTER, run: async (inst, memory) => { memory[inst.noun] = await new Promise((res, rej) => rl.question(chalk.yellow("Input : "), answer => res(parseInt(answer))))}}); // Query -> Insert
+        this.ops.set(4,  { length: 2, pointerMask: 0,               run: async (inst, memory) => { console.log(chalk.blueBright(`Output: ${inst.noun}`)) }}); // Print
         this.ops.set(5,  { length: 3, pointerMask: 0,               run: async (inst, memory) => { if(inst.noun != 0) { this.pointer = inst.verb; this.increment = false; }}}); // Jump if Not Equal
         this.ops.set(6,  { length: 3, pointerMask: 0,               run: async (inst, memory) => { if(inst.noun == 0) { this.pointer = inst.verb; this.increment = false; }}}); // Jump if Equal
         this.ops.set(7,  { length: 4, pointerMask: PARAM_C_POINTER, run: async (inst, memory) => { memory[inst.dest] = (inst.noun < inst.verb) ? 1 : 0}}); // Less Than
@@ -83,10 +84,10 @@ export class IntCodeinnator {
      * @param input input string
      * @param place place from right
      */
-    calcImmedate(input : string, place: number) : boolean {
-        return input.length > place ?
-            // 0 index, subtract 1
-            parseInt(input.charAt(input.length - place - 1)) == 1:
+    calcImmedate(input : number, place: number) : boolean {
+        let length = Math.pow(10, 2 + place);
+        return input > length ?
+            !(input / length % 10 < 1):
             false
     }
 
@@ -96,15 +97,15 @@ export class IntCodeinnator {
 
         while(!this.halt) {
             this.increment = true;
-            let opStr = "" + this.memory[this.pointer];
+            let opRaw = this.memory[this.pointer];
 
-            let opNum = parseInt(opStr.substring(opStr.length > 2 ? opStr.length - 2 : 0));
+            let opNum = opRaw % 100;
             let op : OP = this.ops.get(opNum);
 
             // Calculate if pointer or needs to be immediate
-            let immedOne = op.pointerMask & PARAM_A_POINTER ? true : this.calcImmedate(opStr, 2);
-            let immedTwo = op.pointerMask & PARAM_B_POINTER ? true : this.calcImmedate(opStr, 3);
-            let immedThree = op.pointerMask & PARAM_C_POINTER ? true : this.calcImmedate(opStr, 4);
+            let immedOne = op.pointerMask & PARAM_A_POINTER ? true : this.calcImmedate(opRaw, 0);
+            let immedTwo = op.pointerMask & PARAM_B_POINTER ? true : this.calcImmedate(opRaw, 1);
+            let immedThree = op.pointerMask & PARAM_C_POINTER ? true : this.calcImmedate(opRaw, 2);
 
             let pointerP1 = this.memory[this.pointer + 1];
             let pointerP2 = this.memory[this.pointer + 2];
