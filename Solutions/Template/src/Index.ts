@@ -22,7 +22,7 @@ let innator = new IntCodeinnator(storage);
 let startTime : number = new Date().getTime();
 
 let output = await innator.run(12, 2);
-console.log(output[0]);
+console.log(innator.peekMemory(0));
 
 // Timing end
 let part1End : number = new Date().getTime();
@@ -37,7 +37,7 @@ innator.reset();
 let startPart2Time : number = new Date().getTime();
 
 output = await innator.run(12, 2);
-console.log(output[0]);
+console.log(innator.peekMemory(0));
 
 // Timing end
 let part2End : number = new Date().getTime();

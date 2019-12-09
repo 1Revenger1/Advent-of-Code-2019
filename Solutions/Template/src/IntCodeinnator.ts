@@ -51,7 +51,6 @@ export class Storage {
 export class IntCodeinnator {
     ops : Map<number, OP> = new Map<number, OP>();
     pointer : number;
-    inst : Instruction;
     storage : Storage;
     memory : number[];
     halt = false;
@@ -110,6 +109,10 @@ export class IntCodeinnator {
             false
     }
 
+    peekMemory(address : number) : number {
+        return this.memory[address];
+    }
+
     async run(noun? : number, verb? : number, input? : number[], inputFun? : CallableFunction, output? : CallableFunction) : Promise<number[]> {
         if(noun) this.memory[1] = noun;
         if(verb) this.memory[2] = verb;
@@ -123,39 +126,40 @@ export class IntCodeinnator {
 
             let opNum = opRaw % 100;
             let op : OP = this.ops.get(opNum);
-            if(op == undefined) {
-                console.log(opNum);
-            }
 
+            // Calculate if param needs to be a pointer (pos/rel)
             let over1 = op.pointerMask & PARAM_A_POINTER;
             let over2 = op.pointerMask & PARAM_B_POINTER;
             let over3 = op.pointerMask & PARAM_C_POINTER;
 
-            // Calculate if pointer or needs to be immediate
+            // Calculate if immediate
             let immedOne = over1 ? true : this.calcImmedate(opRaw, 0);
             let immedTwo = over2 ? true : this.calcImmedate(opRaw, 1);
             let immedThree = over3 ? true : this.calcImmedate(opRaw, 2);
 
+            // Get memory
             let pointerP1 = this.memory[this.pointer + 1];
             let pointerP2 = this.memory[this.pointer + 2];
             let pointerP3 = this.memory[this.pointer + 3];
 
+            // Calculate if Relative
             let relatOne = this.calcRelative(opRaw, 0);
             let relatTwo = this.calcRelative(opRaw, 1);
             let relatThree = this.calcRelative(opRaw, 2);
 
-            this.inst = {
+            const inst = {
                 op: opNum,
                 noun: immedOne || over1 ? pointerP1 : (relatOne ? this.memory[this.relativeBase + pointerP1] : this.memory[pointerP1]),
                 verb: immedTwo || over2 ? pointerP2 : (relatTwo ? this.memory[this.relativeBase + pointerP2] : this.memory[pointerP2]),
                 dest: immedThree || over3 ? pointerP3 : (relatThree ? this.memory[this.relativeBase + pointerP3] : this.memory[pointerP3])
             }
 
-            if(over1 && relatOne) this.inst.noun += this.relativeBase;
-            if(over2 && relatTwo) this.inst.verb += this.relativeBase;
-            if(over3 && relatThree) this.inst.dest += this.relativeBase;
+            // If override and relative, we don't add relativeBase yet, so do it here
+            if(over1 && relatOne) inst.noun += this.relativeBase;
+            if(over2 && relatTwo) inst.verb += this.relativeBase;
+            if(over3 && relatThree) inst.dest += this.relativeBase;
 
-            await op.run(this.inst, this.memory);
+            await op.run(inst, this.memory);
             
             if(this.increment) this.pointer += op.length;
         }
