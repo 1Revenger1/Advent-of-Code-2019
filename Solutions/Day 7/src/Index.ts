@@ -91,7 +91,6 @@ for(let i = 5; i < 10; i++) {
                                         
                     let wrapAroundEvent = new EventEmitter();
 
-                    let finished = false;
                     innator5.run(null, null, [n], () => {
                         return new Promise(res => wrapAroundEvent.once("45", (arg) => { res(arg)}))
                     }, (output) => wrapAroundEvent.emit("wrap", output)).then(out => {output.push(out); wrapAroundEvent.emit("done")});
