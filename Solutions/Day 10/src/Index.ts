@@ -15,27 +15,6 @@ let file : string = fs.readFileSync("./input.txt", {
     encoding: "utf8",
 });
 
-let exampleInput : string = `.#..##.###...#######
-##.############..##.
-.#.######.########.#
-.###.#######.####.#.
-#####.##.#.##.###.##
-..#####..#.#########
-####################
-#.####....###.#.#.##
-##.#################
-#####.##.###..####..
-..######..##.#######
-####.##.####...##..#
-.#####..#.######.###
-##...#.##########...
-#.##########.#######
-.####.#.###.###.#.##
-....##.##.###..#####
-.#.#.###########.###
-#.#.#.#####.####.###
-###.##.####.##.#..##`;
-
 enum Type {
     ASTERIOD,
     BLANK
@@ -44,16 +23,75 @@ enum Type {
 interface Pos {
     x : number,
     y : number,
-    type : Type,
-    numberOfVisible : number,
-    hits : {x: number, y: number, slope: number}[]
+    type: Type,
+    numberOfVisible?: number,
+    hits?: Pos[][]
+}
+
+// Given an integer dx, multiply slope by dx until we find an integer dy
+// This has some rounding errors so check if within 0.0000001 of a whole int
+function recursiveIntSlope(slope : number, x : number) {
+    if(Number.isInteger(slope * x) || Math.abs(Math.round(slope * x) - slope * x) < 0.0000001) return x;
+    else return recursiveIntSlope(slope, x + Math.sign(x))
+}
+
+function canSeePoint(field : Pos[][], target : Pos, pos : Pos) : boolean {
+    let dyOrig = pos.y - target.y;
+    let dxOrig = pos.x - target.x;
+
+    let dy = dyOrig;
+    let dx = dxOrig;
+
+    // Get the smallest whole number intervals for points along the line
+    if(dy == 0 && dx != 0) dx = Math.sign(dx);
+    else if(dx == 0 && dy != 0) dy = Math.sign(dy);
+    else if(dx != 0 && dy != 0) {
+        let slope = dyOrig / dxOrig;
+        
+        dx = recursiveIntSlope(slope, Math.sign(dxOrig));
+        dy = Math.round(dx * slope);
+    }
+
+    // Begin by looking at the target to where we are
+    let possiblePosX = target.x + dx;
+    let possiblePosY = target.y + dy;
+
+    let canSee = true;
+    // Loop untill either we hit another asteroid or we hit ourselves
+    while(possiblePosX != pos.x || possiblePosY != pos.y) {
+        
+        // Check it exists and is an asteroid
+        // If we hit an asteroid, then there is no line of site
+        if(input[possiblePosY][possiblePosX] && input[possiblePosY][possiblePosX].type == Type.ASTERIOD) { 
+            canSee = false;
+            break;
+        }
+
+        possiblePosX += dx;
+        possiblePosY += dy;
+    }
+
+    return canSee;
+}
+
+function printField(field : Pos[][]) : string[] {
+    let stringField = [];
+    for(let i = 0; i < field.length; i++) {
+        let buffer = "";
+        for(let j = 0; j < input[0].length; j++) {
+            if(pos.x == j && pos.y == i) buffer += chalk.redBright("X");
+            else if(field[i][j] && field[i][j].type == Type.ASTERIOD) buffer += chalk.gray("#");
+            else buffer += chalk.black(".");
+        }
+        stringField.push(buffer);
+    }
+    return stringField;
 }
 
 // Timing start
 let startTime : number = new Date().getTime();
 
-let inputRows = exampleInput.split("\n");
-//let inputRows = file.split("\r\n");
+let inputRows = file.split("\n");
 let input : Pos[][] = [];
 
 for(let row1 in inputRows) {
@@ -79,50 +117,15 @@ for(let inputRow of input) {
         for(let checkRow of input) {
             for(let target of checkRow) {
                 if(target.type != Type.ASTERIOD || (target.x == pos.x && target.y == pos.y)) continue;
-                let dyOrig = pos.y - target.y;
-                let dxOrig = pos.x - target.x;
 
-                let dy = dyOrig;
-                let dx = dxOrig;
-
-                if(dy == 0 && dx != 0) dx = Math.sign(dx);
-                else if(dx == 0 && dy != 0) dy = Math.sign(dy);
-                else if(dx != 0 && dy != 0) {
-                    let slope = dyOrig / dxOrig;
-                    
-                    let recursiveFun = (slope, x) => {
-                        // console.log(`${slope}, ${x}`)
-                        if(Number.isInteger(slope * x) || Math.abs(Math.round(slope * x) - slope * x) < 0.0000001) return x;
-                        else return recursiveFun(slope, x + Math.sign(x))
-                    }
-                    
-                    dx = recursiveFun(slope, Math.sign(dxOrig));
-                    dy = Math.round(dx * slope);
-                }
-
-                let possiblePosX = target.x + dx;
-                let possiblePosY = target.y + dy;
-
-                let canSee = true;
-                while(possiblePosX != pos.x || possiblePosY != pos.y) {
-                    
-                    if(input[possiblePosY][possiblePosX].type == Type.ASTERIOD) { 
-                        canSee = false;
-                        break;
-                    }
-
-                    possiblePosX += dx;
-                    possiblePosY += dy;
-                }
-                if(canSee) { 
-                    let slope = Math.atan2(dyOrig, dxOrig);
-
+                if(canSeePoint(input, pos, target)) { 
+                    if(pos.hits[target.y] == null) pos.hits[target.y] = new Array();
                     pos.numberOfVisible++;
-                    pos.hits.push({
+                    pos.hits[target.y][target.x] = {
                         x: target.x,
                         y: target.y,
-                        slope: slope
-                    })
+                        type: Type.ASTERIOD
+                    };
                 }
             }
         }
@@ -136,7 +139,7 @@ input.forEach(value => {
     })
 })
 
-console.log(pos);
+console.log(`X: ${pos.x}, Y: ${pos.y}, Number Visible: ${pos.numberOfVisible}`);
 
 // Timing end
 let part1End : number = new Date().getTime();
@@ -150,47 +153,48 @@ let startPart2Time : number = new Date().getTime();
 
 let angle = Math.PI / 2;
 let destroy = 0;
-let lastDestroyed = null;
+let wrap = true;
+let origField = printField(input);
+
 while(destroy < 200) {
     
     let difference = Math.PI;
-    let toBeRemoved = null;
-    let isCardinal = false;
+    let toBeRemoved : Pos;
+    let tempAngle = 0;
     pos.hits.forEach((value, index) => {
+        value.forEach((target, indexX) => {
+            if(target.x == pos.x && target.y == pos.y) return;
+            if(target == null) return;
+            let dyOrig = pos.y - target.y;
+            let dxOrig = pos.x - target.x;
 
-
-        if(isCardinal && angle - value.slope == difference) {
-            let posToBeRemoved = pos.hits[toBeRemoved];
-            if(Math.sqrt(Math.pow(value.x - pos.x, 2) + Math.pow(value.y - pos.y, 2))
-                < Math.sqrt(Math.pow(posToBeRemoved.x - pos.x, 2) + Math.pow(posToBeRemoved.y - pos.y, 2))) {
-                    toBeRemoved = index;
+            let anglePos = Math.atan2(dyOrig, -dxOrig);
+            if(wrap) { if (angle - anglePos < 0 || angle - anglePos > difference) return; }
+            else if(angle - anglePos <= 0 || angle - anglePos > difference) return;
+            if(canSeePoint(pos.hits, target, pos)) {
+                difference = angle - anglePos;
+                toBeRemoved = target;
+                tempAngle = anglePos;
             }
-        }
-
-        if(destroy == 0 && angle - value.slope == 0) {
-            if(toBeRemoved != null) {
-                if(value.y > pos.hits[toBeRemoved].y) toBeRemoved = index;
-            } else toBeRemoved = index;
-        }  else if(angle - value.slope < difference && angle - value.slope > 0) {
-            toBeRemoved = index;
-            difference = angle - value.slope;
-            if(value.slope % (Math.PI / 2) == 0) isCardinal = true;
-            else isCardinal = false;
-        }
+        });
     });
 
     if(toBeRemoved != null) {
-        console.log(pos.hits[toBeRemoved]);
         destroy++;
-        angle = pos.hits[toBeRemoved].slope;
-        lastDestroyed = {...pos.hits[toBeRemoved]};
-        delete pos.hits[toBeRemoved];
+        if(destroy == 200) {
+            console.log("\nOriginal: " + new Array(input.length - 10).join(" ") + "\t\tVaporized:")
+            console.log(printField(pos.hits).map((value, index) => { return origField[index] + "\t" + value}).join("\n"));
+            console.log(`\nX: ${toBeRemoved.x} Y: ${toBeRemoved.y}\n`); 
+        }
+
+        delete pos.hits[toBeRemoved.y][toBeRemoved.x];
+        angle = tempAngle;
+        wrap = false;
     } else {
         angle = Math.PI;
+        wrap = true;
     }
 }
-
-console.log(lastDestroyed);
 
 // Timing end
 let part2End : number = new Date().getTime();
