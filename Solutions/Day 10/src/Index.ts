@@ -155,8 +155,9 @@ while(destroy < 200) {
     
     let difference = Math.PI;
     let toBeRemoved = null;
+    let isCardinal = false;
     pos.hits.forEach((value, index) => {
-        let isCardinal = false;
+
 
         if(isCardinal && angle - value.slope == difference) {
             let posToBeRemoved = pos.hits[toBeRemoved];
@@ -174,6 +175,7 @@ while(destroy < 200) {
             toBeRemoved = index;
             difference = angle - value.slope;
             if(value.slope % (Math.PI / 2) == 0) isCardinal = true;
+            else isCardinal = false;
         }
     });
 
