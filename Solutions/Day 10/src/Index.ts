@@ -31,7 +31,7 @@ interface Pos {
 // Given an integer dx, multiply slope by dx until we find an integer dy
 // This has some rounding errors so check if within 0.0000001 of a whole int
 function recursiveIntSlope(slope : number, x : number) {
-    if(Number.isInteger(slope * x) || Math.abs(Math.round(slope * x) - slope * x) < 0.0000001) return x;
+    if(Math.abs(Math.round(slope * x) - slope * x) < 0.0000001) return x;
     else return recursiveIntSlope(slope, x + Math.sign(x))
 }
 
