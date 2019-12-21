@@ -52,6 +52,12 @@ function findNeighbors(start: Pos) : Pos[] {
     return neighbors;
 }
 
+/**
+ * A* algorithm
+ * Finds shortest path as quickly as possible to goal
+ * @param start Starting position
+ * @param goal  Goal position
+ */
 function aStar(start : Pos, goal : Pos) {
     let discoveredSpots : Pos[] = [start];
     let cameFrom : Map<string, Pos> = new Map<string, Pos>();
@@ -93,7 +99,13 @@ function aStar(start : Pos, goal : Pos) {
     return [];
 }
 
-function BFS(start) {
+/**
+ * Breadth-First-Search
+ * If no goal is defined, it'll find the place with the longest path
+ * @param start Starting position
+ * @param goal  Goal position you want to find
+ */
+function BFS(start : Pos, goal ?: Pos) {
     let discovered : string[] = [start.toString()];
     let queue : Pos[] = [start];
     let cameFrom : Map<string, Pos> = new Map<string, Pos>();
@@ -102,6 +114,11 @@ function BFS(start) {
     while(queue.length > 0) {
         let spot = queue.shift();
         lastPos = spot;
+
+        // If goal, return the path
+        if(goal && spot.x == goal.x && spot.y == goal.y)
+            return reconstruct_path(cameFrom, spot);
+
         let neighbors = findNeighbors(spot);
         neighbors.forEach(neighbor => {
             if(maze.get(neighbor.toString()) == BlockType.Wall) return;
@@ -183,7 +200,6 @@ function drawMaze(maze : Map<string,BlockType>, min : Pos, max : Pos) {
 let oxyPos : Pos = null;
 
 innator.setup(null, null, null, async () => {
-    // await new Promise(res => setTimeout(() => res(), 5));
     switch (direction) {
         case Directions.NORTH: return 1;
         case Directions.EAST: return 4;
@@ -197,6 +213,7 @@ innator.setup(null, null, null, async () => {
     if(pos.y < minPos.y) minPos.y = blockInFront.y;
     if(pos.y > maxPos.y) maxPos.y = blockInFront.y;
 
+    // Right handed search - try to discover what's to the right
     if(output == 0) {
         direction = goLeft(direction);
 
@@ -231,6 +248,7 @@ console.log(chalk.yellow("Part 1 done in: ") + chalk.red(part1End - startTime + 
 // Timing of Part 2 start
 let startPart2Time : number = new Date().getTime();
 
+// Find the longest path - don't specify a goal
 console.log(BFS(oxyPos).length - 1);
 
 // Timing end
