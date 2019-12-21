@@ -21,13 +21,109 @@ enum BlockType {
     Oxygen
 }
 
-enum Direction {
-    North, East, South, West
+class Pos {
+    x: number;
+    y: number;
+    constructor(x : number, y: number) {
+        this.x = x;
+        this.y = y;
+    }
+    toString = () => `${this.x},${this.y}`;
+    add = (b : Pos) => new Pos(this.x + b.x, this.y + b.y);
 }
 
-interface Pos {
-    x: number,
-    y: number
+let Directions = {
+    NORTH: new Pos(0, -1),
+    SOUTH: new Pos(0, 1),
+    EAST : new Pos(1, 0),
+    WEST : new Pos(-1, 0)
+}
+
+function distance(a : Pos, b: Pos) : number {
+    return Math.sqrt(Math.pow(a.x + b.x, 2) + Math.pow(a.y + b.y, 2))
+}
+
+function findNeighbors(start: Pos) : Pos[] {
+    let neighbors = [];
+    for(let dir in Directions) {
+        let pos = start.add(Directions[dir]);
+        neighbors.push(pos);
+    }
+    return neighbors;
+}
+
+function aStar(start : Pos, goal : Pos) {
+    let discoveredSpots : Pos[] = [start];
+    let cameFrom : Map<string, Pos> = new Map<string, Pos>();
+    let gScore : Map<string,number> = new Map<string, number>();
+    gScore.set(start.toString(), 0);
+
+    let fScore : Map<string,number> = new Map<string, number>();
+    fScore.set(start.toString(), distance(start, goal));
+
+    while(discoveredSpots.length != 0) {
+        let lowestScore : Pos = discoveredSpots[0];
+        let lowestIndex = 0;
+        discoveredSpots.forEach((pos, index) => {
+            if(fScore.get(pos.toString()) < fScore.get(lowestScore.toString())) {
+                lowestScore = pos;
+                lowestIndex = index;
+            }
+        });
+
+        if(lowestScore.x == goal.x && lowestScore.y == goal.y)
+            return reconstruct_path(cameFrom, lowestScore);
+
+        discoveredSpots.splice(lowestIndex, 1);
+        let neighbors = findNeighbors(lowestScore);
+        neighbors.forEach(neighbor => {
+            if(maze.get(`${neighbor.x},${neighbor.y}`) == BlockType.Wall) return;
+            let score = gScore.get(lowestScore.toString()) + 1;
+            if(score < (gScore.has(neighbor.toString()) ? gScore.get(neighbor.toString()) : Infinity)) {
+                cameFrom.set(neighbor.toString(), lowestScore);
+                gScore.set(neighbor.toString(), score);
+                fScore.set(neighbor.toString(), distance(neighbor, goal));
+                let inDiscoverd = false;
+                discoveredSpots.forEach(value => { if(!inDiscoverd && value.x == neighbor.x && value.y == neighbor.y) inDiscoverd = true; });
+                if(!inDiscoverd) discoveredSpots.push(neighbor);
+            }
+        });
+    }
+
+    return [];
+}
+
+function BFS(start) {
+    let discovered : string[] = [start.toString()];
+    let queue : Pos[] = [start];
+    let cameFrom : Map<string, Pos> = new Map<string, Pos>();
+    let lastPos = start;
+
+    while(queue.length > 0) {
+        let spot = queue.shift();
+        lastPos = spot;
+        let neighbors = findNeighbors(spot);
+        neighbors.forEach(neighbor => {
+            if(maze.get(neighbor.toString()) == BlockType.Wall) return;
+            if(!cameFrom.has(neighbor.toString()) && !discovered.includes(neighbor.toString())) {
+                discovered.push(neighbor.toString());
+                cameFrom.set(neighbor.toString(), spot);
+                queue.push(neighbor);
+            }
+        });
+    }
+
+    return reconstruct_path(cameFrom, lastPos);
+}
+
+function reconstruct_path(cameFrom : Map<string, Pos>, current: Pos) : Pos[] {
+    let path : Pos[] = [current];
+    while(cameFrom.has(current.toString())) {
+        current = cameFrom.get(current.toString());
+        path.unshift(current);
+    }
+
+    return path;
 }
 
 // Timing start
@@ -36,88 +132,94 @@ let startTime : number = new Date().getTime();
 let storage = Storage.importFile(file);
 let innator = new IntCodeinnator(storage);
 
-let direction = Direction.North;
+let direction = Directions.NORTH;
 
-let hitWall = true;
-let pos : Pos = {x: 0, y: 0};
-let minPos : Pos = {x: 0, y: 0};
-let maxPos : Pos = {x: 0, y: 0};
-let wallsFound : Pos[] = [];
+let pos : Pos = new Pos(0, 0);
+let minPos : Pos = new Pos(0, 0);
+let maxPos : Pos = new Pos(0, 0);
+let maze : Map<string,BlockType> = new Map<string,BlockType>();
+maze.set(pos.toString(), BlockType.Air);
 
-let foundOxy = false;
+function goLeft(input) {
+    switch(input) {
+        case Directions.NORTH : return Directions.WEST;
+        case Directions.EAST : return Directions.NORTH;
+        case Directions.SOUTH : return Directions.EAST;
+        case Directions.WEST : return Directions.SOUTH;
+    }
+}
+
+function goRight(input) {
+    switch(input) {
+        case Directions.NORTH : return Directions.EAST;
+        case Directions.EAST : return Directions.SOUTH;
+        case Directions.SOUTH : return Directions.WEST;
+        case Directions.WEST : return Directions.NORTH;
+    }
+}
+
+function drawMaze(maze : Map<string,BlockType>, min : Pos, max : Pos) {
+    console.clear();
+    let field : string[][] = new Array(max.y + Math.abs(min.y) + 3);
+    for(let i = 0; i < field.length; i++) {
+        field[i] = new Array(max.x + Math.abs(min.x) + 3).fill(" ");
+    }
+    
+    let offsetX = min.x - 1;
+    let offsetY = min.y - 1;
+    
+    maze.forEach((type, key) => {
+        let pos = key.split(",").map(value => parseInt(value));
+        field[pos[1] - offsetY][pos[0] - offsetX] = type == BlockType.Air ? " " : chalk.bgBlackBright(" ");
+        if(type == BlockType.Oxygen) field[pos[1] - offsetY][pos[0] - offsetX] = chalk.bgBlue(" ");
+    });
+
+    field[-offsetY][-offsetX] = chalk.bgRed(" ");
+    field[pos.y - offsetY][pos.x - offsetX] = chalk.bgGreen(" ");
+    
+    console.log(field.map(value => value.join("")).join("\n"))
+}
+
+let oxyPos : Pos = null;
 
 innator.setup(null, null, null, async () => {
+    // await new Promise(res => setTimeout(() => res(), 5));
     switch (direction) {
-        case Direction.North: return 1;
-        case Direction.East: return 4;
-        case Direction.South: return 2;
-        case Direction.West: return 3;
+        case Directions.NORTH: return 1;
+        case Directions.EAST: return 4;
+        case Directions.SOUTH: return 2;
+        case Directions.WEST: return 3;
     }
 }, output => {
-    let blockInFront = {...pos};
-    switch(direction) {
-        case Direction.North: blockInFront.y++; break;
-        case Direction.South: blockInFront.y--; break;
-        case Direction.East: blockInFront.x++; break;
-        case Direction.West: blockInFront.x--; break;
-    }
+    let blockInFront = pos.add(direction);
+    if(pos.x < minPos.x) minPos.x = blockInFront.x;
+    if(pos.x > maxPos.x) maxPos.x = blockInFront.x;
+    if(pos.y < minPos.y) minPos.y = blockInFront.y;
+    if(pos.y > maxPos.y) maxPos.y = blockInFront.y;
 
-    if(output == 2) foundOxy = true;
     if(output == 0) {
-        let blockToSide = {x: pos.x, y: pos.y};
-        let sideDir = (direction + 1) % 4;
-        switch(sideDir) {
-            case Direction.North: blockToSide.y++; break;
-            case Direction.South: blockToSide.y--; break;
-            case Direction.East:  blockToSide.x++; break;
-            case Direction.West:  blockToSide.x--; break;
-        }
+        direction = goLeft(direction);
 
-        let sideWall = false;
-        wallsFound.forEach(value => {sideWall = value.x == blockToSide.x && value.y == blockToSide.y ? true : (false || sideWall)})
-        if((sideWall)) {
-            direction--;
-            if(direction < 0) direction = 3;
-        } else {
-            direction = ++direction % 4;
-        }
-
-        let inFront = false;
-        wallsFound.forEach(value => {inFront = value.x == blockInFront.x && value.y == blockInFront.y? true : (false || sideWall)});
-
-        if(!inFront) {
-            wallsFound.push({...blockInFront});
-            // direction = Math.floor(Math.random() * 4);
-            let field : string[][] = new Array(maxPos.y + Math.abs(minPos.y) + 3);
-            for(let i = 0; i < field.length; i++) {
-                field[i] = new Array(maxPos.x + Math.abs(minPos.x) + 3).fill(" ");
-            }
-            
-            let offsetX = minPos.x - 1;
-            let offsetY = minPos.y - 1;
-            
-            
-            wallsFound.forEach(wall => {
-                field[wall.y - offsetY][wall.x - offsetX] = "#";
-            });
-
-            field[-offsetY][-offsetX] = chalk.bgRed(" ");
-            
-            console.log(field.map(value => value.join("")).join("\n"))
-            console.log("---------------------------------------------------");
-        }
+        maze.set(blockInFront.toString(), BlockType.Wall);
     } else {
-        pos = {...blockInFront};
-        if(pos.x < minPos.x) minPos.x = pos.x;
-        if(pos.x > maxPos.x) maxPos.x = pos.x;
-        if(pos.y < minPos.y) minPos.y = pos.y;
-        if(pos.y > maxPos.y) maxPos.y = pos.y;
+        if(output == 2) {
+            oxyPos = new Pos(blockInFront.x, blockInFront.y);
+            maze.set(blockInFront.toString(), BlockType.Oxygen);
+        } else {
+            maze.set(blockInFront.toString(), BlockType.Air);
+        }
+        direction = goRight(direction);
+        pos = new Pos(blockInFront.x, blockInFront.y);
+
+        if(pos.x == 0 && pos.y == 0) innator.haltInnator();
     }
 });
 
-while(!foundOxy) await innator.run();
+await innator.run();
 
-
+console.log(oxyPos.toString());
+drawMaze(maze, minPos, maxPos);
+console.log(aStar(new Pos(0, 0), oxyPos).length - 1);
 
 // Timing end
 let part1End : number = new Date().getTime();
@@ -129,6 +231,7 @@ console.log(chalk.yellow("Part 1 done in: ") + chalk.red(part1End - startTime + 
 // Timing of Part 2 start
 let startPart2Time : number = new Date().getTime();
 
+console.log(BFS(oxyPos).length - 1);
 
 // Timing end
 let part2End : number = new Date().getTime();
