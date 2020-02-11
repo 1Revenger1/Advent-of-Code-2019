@@ -200,6 +200,7 @@ function drawMaze(maze : Map<string,BlockType>, min : Pos, max : Pos) {
 let oxyPos : Pos = null;
 
 innator.setup(null, null, null, async () => {
+    await new Promise(res => setTimeout(() => res(), 10));
     switch (direction) {
         case Directions.NORTH: return 1;
         case Directions.EAST: return 4;
@@ -225,6 +226,7 @@ innator.setup(null, null, null, async () => {
         } else {
             maze.set(blockInFront.toString(), BlockType.Air);
         }
+        drawMaze(maze, minPos, maxPos);
         direction = goRight(direction);
         pos = new Pos(blockInFront.x, blockInFront.y);
 

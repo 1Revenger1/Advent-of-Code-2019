@@ -4,19 +4,16 @@ import { IntCodeinnator, Storage } from './IntCodeinnator';
 
 (async () => {
 
-const day : number = 0;
+const day : number = 25;
 
-console.log("+------------------------------+");
+console.log("+-------------------------------+");
 console.log("|  " + chalk.blueBright("Advent of Code 2019:") + chalk.green(" Day", day) + "  |");
-console.log("+------------------------------+\n");
+console.log("+-------------------------------+\n");
 
 // Get file and split it into lines
 let file : string = fs.readFileSync("./input.txt", {
     encoding: "utf8",
 });
-
-let storage = Storage.importFile(file);
-let innator = new IntCodeinnator(storage);
 
 // Give string and returns ASCII code
 function getInput(input : string) : number[] {
@@ -27,26 +24,59 @@ function getOutput(input : number) : string {
     return String.fromCharCode(input);
 }
 
+class Pos {
+    x: number;
+    y: number;
+    constructor(x : number, y: number) {
+        this.x = x;
+        this.y = y;
+    }
+    toString = () => `${this.x},${this.y}`;
+    add = (b : Pos) => new Pos(this.x + b.x, this.y + b.y);
+}
+
+let storage = Storage.importFile(file);
+let innator = new IntCodeinnator(storage);
+
 // Timing start
 let startTime : number = new Date().getTime();
 
-let inputs : number[] = [].concat(
-    // Checks if there is any gap
-    getInput("NOT A J"),
-    getInput("NOT B T"),
-    getInput("AND T J"),
-    getInput("NOT C T"),
-    getInput("AND T J"),
-    // Jump if there is a gap 
-    // and if there is a place to land
-    getInput("AND D J"),
-    getInput("WALK")
-);
+let pos : Pos = new Pos(0, 0);
 
 let buffer = "";
-let output = await innator.run(null, null, inputs, null, out => { buffer += getOutput(out)});
-console.log(buffer);
-// console.log(output[output.length - 1]);
+
+let index = 0;
+let input = "";
+function divideInput() {
+    let output = input.charCodeAt(index++);
+    if(index == input.length && input != "") {
+        input = "";
+        index = 0;
+    }
+    return output;
+}
+
+const readline = require('readline');
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+rl.on("line", line => {
+    input = line + "\n";
+});
+
+let output = await innator.run(null, null, null, async () => {
+    await new Promise(res => { setInterval(() => { if(input.includes("\n")) res()}, 100)});
+    let letter = divideInput();
+    return letter;
+}, output => {
+    if(output == 10) { 
+        console.log(buffer);
+        buffer = "";
+    } else buffer += getOutput(output);
+});
 
 // Timing end
 let part1End : number = new Date().getTime();
@@ -60,26 +90,8 @@ innator.reset();
 // Timing of Part 2 start
 let startPart2Time : number = new Date().getTime();
 
-inputs = [].concat(
-    // Check if there is any gaps
-    getInput("NOT A J"),
-    getInput("NOT B T"),
-    getInput("OR T J"),
-    getInput("NOT C T"),
-    getInput("OR T J"),
-    // Jump if there is a place to land at and there are gaps
-    getInput("AND D J"),
-    // Check if A is a gap or if H (8) is a block <-- this works somehow?
-    getInput("NOT A T"),
-    getInput("OR H T"),
-    getInput("AND T J"),
-    getInput("RUN")
-);
-
-buffer = "";
-output = await innator.run(null, null, inputs, null, out => { buffer += getOutput(out)});
-if(buffer.length > 100) console.log(buffer);
-else console.log(output[output.length - 1]);
+output = await innator.run(12, 2);
+console.log(innator.peekMemory(0));
 
 // Timing end
 let part2End : number = new Date().getTime();

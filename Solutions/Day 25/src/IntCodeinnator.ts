@@ -113,14 +113,10 @@ export class IntCodeinnator {
         return this.memory[address];
     }
 
-    haltInnator() {
-        this.halt = true;
-    }
-
     async run(noun? : number, verb? : number, input? : number[], inputFun? : CallableFunction, output? : CallableFunction) : Promise<number[]> {
         if(noun) this.memory[1] = noun;
         if(verb) this.memory[2] = verb;
-        if(input) this.input = [...input];
+        if(input) this.input = input;
         if(inputFun) this.inputFunction = inputFun;
         if(output) this.outputFunction = output;
 
@@ -164,7 +160,7 @@ export class IntCodeinnator {
             if(over3 && relatThree) inst.dest += this.relativeBase;
 
             await op.run(inst, this.memory);
-
+            
             if(this.increment) this.pointer += op.length;
         }
         return [...this.output];

@@ -1,0 +1,19 @@
+{
+  "name": "advent-of-code-2019",
+  "version": "1.0.0",
+  "description": "Advent of Code 2019",
+  "scripts": {
+    "start": "tsc && node dist/Index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "1Revenger1",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^12.12.14",
+    "chalk": "^3.0.0",
+    "typescript": "^3.7.2"
+  },
+  "dependencies": {
+    "bigint-crypto-utils": "^2.4.2"
+  }
+}
